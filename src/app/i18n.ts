@@ -1,7 +1,125 @@
 // ─── Translations ──────────────────────────────────────────────────────────
 export type Lang = 'fr' | 'ar';
 
-export const T = {
+// 1. Define the Interface to allow any string for the keys
+export interface TranslationSchema {
+  appName: string;
+  appSub: string;
+  allFiles: string;
+  newFile: string;
+  quickSearch: string;
+  export: string;
+  exportBtn: string;
+  stats: {
+    aramilat: string;
+    enfants: string;
+    avecEnfants: string;
+    sansEnfants: string;
+  };
+  topbarTitle: string;
+  advFilters: string;
+  addFilter: string;
+  clearAll: string;
+  hide: string;
+  globalSearch: string;
+  results: (n: number) => string;
+  clickHint: string;
+  sortBy: string;
+  loading: string;
+  noResults: string;
+  noResultsSub: string;
+  clearFilters: string;
+  noFiltersHint: string;
+  suggestions: Array<{ label: string; field: string; op: string; val: string }>;
+  noFilter: string;
+  whereLabel: string;
+  andLabel: string;
+  activeLabel: string;
+  searchBtn: string;
+  sortFields: {
+    nom: string; prenom: string; nb_enfants: string;
+    date_naissance: string; date_deces_mari: string;
+  };
+  husband: string;
+  death: string;
+  address: string;
+  noValue: string;
+  noAddress: string;
+  child_badge: (n: number) => string;
+  identity: string;
+  fullName: string;
+  birthDate: string;
+  cin: string;
+  phone: string;
+  noCin: string;
+  husbandInfo: string;
+  husbandFirst: string;
+  husbandLast: string;
+  deathDate: string;
+  notes: string;
+  children: string;
+  addChild: string;
+  noChildren: string;
+  noChildrenSub: string;
+  tblName: string;
+  tblSex: string;
+  tblBirth: string;
+  tblClothes: string;
+  tblShoes: string;
+  tblActions: string;
+  boy: string;
+  girl: string;
+  deleteFile: string;
+  close: string;
+  edit: string;
+  newAramila: string;
+  editFile: string;
+  createNew: string;
+  identitySection: string;
+  firstNameLbl: string;
+  lastNameLbl: string;
+  dobLbl: string;
+  cinLbl: string;
+  phoneLbl: string;
+  addressLbl: string;
+  husbandSection: string;
+  husbandFirstLbl: string;
+  husbandLastLbl: string;
+  deathDateLbl: string;
+  notesSection: string;
+  notesLbl: string;
+  notesPlh: string;
+  cancel: string;
+  save: string;
+  saving: string;
+  addChildTitle: string;
+  editChildTitle: string;
+  fileOf: (n: string) => string;
+  selectSex: string;
+  clothes: string;
+  shoes: string;
+  confirmDel: string;
+  confirmFileDel: (name: string, n: number) => string;
+  confirmChildDel: (name: string) => string;
+  confirm: string;
+  created: string;
+  updated: string;
+  deleted: string;
+  childAdded: string;
+  childUpdated: string;
+  childDeleted: string;
+  connError: string;
+  saveError: string;
+  required: string;
+  exporting: string;
+  schemaLabels: { [key: string]: string };
+  ops: { [key: string]: string };
+  dir: 'ltr' | 'rtl';
+  fontClass: string;
+}
+
+// 2. Map the languages to the Schema
+export const T: Record<Lang, TranslationSchema> = {
   fr: {
     appName:        'أَرامِلات',
     appSub:         'Registre de Gestion',
@@ -51,7 +169,6 @@ export const T = {
     noValue:        'Non renseigné',
     noAddress:      'Non renseignée',
     child_badge:    (n:number) => `${n} enfant${n!==1?'s':''}`,
-    // Detail popup
     identity:       'Identité',
     fullName:       'Nom complet',
     birthDate:      'Date de naissance',
@@ -78,7 +195,6 @@ export const T = {
     deleteFile:     'Supprimer la fiche',
     close:          'Fermer',
     edit:           'Modifier',
-    // Form
     newAramila:     'Nouvelle aramila',
     editFile:       'Modifier la fiche',
     createNew:      'Créer une nouvelle fiche',
@@ -99,19 +215,16 @@ export const T = {
     cancel:         'Annuler',
     save:           'Enregistrer',
     saving:         'Enregistrement…',
-    // Enfant form
     addChildTitle:  'Ajouter un enfant',
     editChildTitle: "Modifier l'enfant",
     fileOf:         (n:string) => `Fiche de ${n}`,
     selectSex:      '— Sélectionner —',
     clothes:        'Vêtements',
     shoes:          'Pointure EU',
-    // Confirm
     confirmDel:     'Confirmer la suppression',
     confirmFileDel: (name:string, n:number) => `Supprimer la fiche de ${name} et ses ${n} enfant(s) ?`,
     confirmChildDel:(name:string) => `Supprimer l'enfant ${name} ?`,
     confirm:        'Supprimer',
-    // Toast
     created:        'Fiche créée ✓',
     updated:        'Fiche mise à jour ✓',
     deleted:        'Fiche supprimée',
@@ -122,7 +235,6 @@ export const T = {
     saveError:      'Erreur lors de la sauvegarde',
     required:       'Nom et prénom requis',
     exporting:      'Export en cours…',
-    // Schema labels
     schemaLabels: {
       q: 'Recherche globale', nom: 'Nom', prenom: 'Prénom', cin: 'CIN',
       adresse: 'Adresse', telephone: 'Téléphone', nom_mari: 'Nom du mari',
@@ -135,7 +247,7 @@ export const T = {
       '>=': '≥', '<=': '≤', '>': '>', '<': '<',
       BETWEEN: 'entre', IN: 'dans', 'NOT NULL': 'renseigné', NULL: 'vide',
     },
-    dir: 'ltr' as 'ltr'|'rtl',
+    dir: 'ltr',
     fontClass: 'font-latin',
   },
   ar: {
@@ -265,9 +377,10 @@ export const T = {
       '>=': '≥', '<=': '≤', '>': '>', '<': '<',
       BETWEEN: 'بين', IN: 'ضمن', 'NOT NULL': 'محدد', NULL: 'فارغ',
     },
-    dir: 'rtl' as 'ltr'|'rtl',
+    dir: 'rtl',
     fontClass: 'font-arabic',
   }
-} as const;
+};
 
-export type Translations = typeof T.fr;
+// 3. Export the general type for use in Page components
+export type Translations = TranslationSchema;
