@@ -227,6 +227,8 @@ export default function Page() {
   const [sortField,setSortField] = useState('nom');
   const [sortDir,setSortDir]     = useState<'asc'|'desc'>('asc');
   const tRef = useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
+  const popBodyRef = useRef<HTMLDivElement>(null);
+  const enfsRef    = useRef<HTMLDivElement>(null);
 
   useEffect(()=>{
     document.documentElement.lang=lang;
@@ -284,6 +286,15 @@ export default function Page() {
     try{const r=await fetch(`${API}/aramilat/${id}/enfants`);if(r.ok)setPopEnf(await r.json());}
     catch{}finally{setPopLoad(false);}
   },[]);
+
+  // Auto-scroll to children section once loaded
+  useEffect(()=>{
+    if(!popLoad && popEnf.length > 0 && enfsRef.current){
+      setTimeout(()=>{
+        enfsRef.current?.scrollIntoView({behavior:'smooth', block:'nearest'});
+      }, 80);
+    }
+  },[popLoad, popEnf.length]);
 
   useEffect(()=>{fetchSchema();fetchStats();},[]);
   useEffect(()=>{fetchList();},[buildParams,sortField,sortDir]);
@@ -594,7 +605,7 @@ export default function Page() {
               </div>
             </div>
             {/* Body */}
-            <div className="popup-body">
+            <div className="popup-body" ref={popBodyRef}>
               <div className="popup-grid">
                 <div className="popup-card">
                   <div className="popup-card-title">{I.user} {t.identity}</div>
@@ -614,7 +625,7 @@ export default function Page() {
               </div>
 
               {/* Enfants section */}
-              <div className="sect-hdr">
+              <div className="sect-hdr" ref={enfsRef}>
                 <div className="sect-title">{I.child} {t.children} ({popLoad?'…':popEnf.length})</div>
                 <button className="btn btn-rose btn-sm" onClick={()=>openFormE(emptyE())}>{I.plus} {t.addChild}</button>
               </div>
