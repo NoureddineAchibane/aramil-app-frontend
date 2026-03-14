@@ -103,15 +103,42 @@ const LangSwitch=({lang,onChange}:{lang:Lang;onChange:(l:Lang)=>void})=>(
   </div>
 );
 
+/* ── Skeleton Card ───────────────────────────────── */
+function SkeletonCard({delay=0}:{delay?:number}) {
+  return (
+    <div className="skel-card" style={{animationDelay:`${delay}s`}}>
+      <div className="skel-top">
+        <div className="skel-av skeleton"/>
+        <div className="skel-id">
+          <div className="skeleton" style={{height:14,width:'70%',borderRadius:6}}/>
+          <div className="skeleton" style={{height:10,width:'40%',borderRadius:6}}/>
+        </div>
+      </div>
+      <div className="skel-meta">
+        {[80,65,55].map((w,i)=>(
+          <div key={i} className="skel-row">
+            <div className="skeleton" style={{height:10,width:10,borderRadius:'50%',flexShrink:0}}/>
+            <div className="skeleton" style={{height:10,width:50,borderRadius:6}}/>
+            <div className="skeleton" style={{height:10,width:`${w}px`,borderRadius:6}}/>
+          </div>
+        ))}
+      </div>
+      <div className="skel-foot">
+        <div className="skeleton" style={{height:22,width:90,borderRadius:99}}/>
+        <div className="skeleton" style={{height:10,width:70,borderRadius:6,marginLeft:'auto'}}/>
+      </div>
+    </div>
+  );
+}
+
 /* ── FormModal — Stacked modal (z:70) ────────────── */
-function FormModal({title,subtitle,emoji,onClose,onSave,saving,saveLabel,children,dir='ltr'}:{
+function FormModal({title,subtitle,emoji,onClose,onSave,saving,saveLabel,children,dir='ltr',cancelLabel='Annuler'}:{
   title:string;subtitle?:string;emoji:string;onClose:()=>void;onSave:()=>void;
-  saving:boolean;saveLabel:string;children:ReactNode;dir?:'ltr'|'rtl';
+  saving:boolean;saveLabel:string;children:ReactNode;dir?:'ltr'|'rtl';cancelLabel?:string;
 }) {
   return (
     <div className="fmodal-wrap" onClick={onClose}>
       <div className="fmodal" onClick={e=>e.stopPropagation()} dir={dir}>
-        {/* Header */}
         <div className="fmodal-hdr">
           <div className="fmodal-hdr-l">
             <div className="fmodal-emoji">{emoji}</div>
@@ -122,16 +149,14 @@ function FormModal({title,subtitle,emoji,onClose,onSave,saving,saveLabel,childre
           </div>
           <button className="fmodal-close" onClick={onClose}>{I.x}</button>
         </div>
-        {/* Body */}
         <div className="fmodal-body">{children}</div>
-        {/* Footer */}
         <div className="fmodal-foot">
           <div className="fmodal-foot-back">
-            <button className="btn btn-ghost btn-sm" onClick={onClose}>{I.back} Annuler</button>
+            <button className="btn btn-ghost btn-sm" onClick={onClose}>{I.back} {cancelLabel}</button>
           </div>
           <button className="btn btn-rose fmodal-save" onClick={onSave} disabled={saving}>
             {saving
-              ? <><div className="spin" style={{width:14,height:14}}/><span>Enregistrement…</span></>
+              ? <><div className="spin" style={{width:14,height:14}}/><span>…</span></>
               : <><span>{I.check}</span><span>{saveLabel}</span></>
             }
           </button>
@@ -476,7 +501,9 @@ export default function Page() {
 
           {/* Cards grid */}
           {loading?(
-            <div className="loading"><div className="spin"/><span>{t.loading}</span></div>
+            <div className="cards">
+              {Array.from({length:6},(_,i)=><SkeletonCard key={i} delay={i*0.06}/>)}
+            </div>
           ):list.length===0?(
             <div className="empty">
               <div className="empty-icon">🔍</div>
@@ -614,11 +641,8 @@ export default function Page() {
           emoji={editA.id?'✏️':'🌹'}
           title={editA.id?t.editFile:t.newAramila}
           subtitle={editA.id?`${editA.prenom||''} ${editA.nom||''}`.trim():t.createNew}
-          onClose={closeFormA}
-          onSave={saveA}
-          saving={saving}
-          saveLabel={t.save}
-          dir={t.dir}
+          onClose={closeFormA} onSave={saveA} saving={saving}
+          saveLabel={t.save} cancelLabel={t.cancel} dir={t.dir}
         >
           {/* Section: Identité */}
           <div className="fs">
@@ -687,11 +711,8 @@ export default function Page() {
           emoji={editE.id?'✏️':'👶'}
           title={editE.id?t.editChildTitle:t.addChildTitle}
           subtitle={t.fileOf(`${popup.prenom} ${popup.nom}`)}
-          onClose={closeFormE}
-          onSave={saveE}
-          saving={saving}
-          saveLabel={t.save}
-          dir={t.dir}
+          onClose={closeFormE} onSave={saveE} saving={saving}
+          saveLabel={t.save} cancelLabel={t.cancel} dir={t.dir}
         >
           {/* Section: Identité */}
           <div className="fs">
