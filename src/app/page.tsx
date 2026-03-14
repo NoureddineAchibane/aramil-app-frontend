@@ -226,15 +226,27 @@ export default function Page() {
   const [saving,setSaving]       = useState(false);
   const [sortField,setSortField] = useState('nom');
   const [sortDir,setSortDir]     = useState<'asc'|'desc'>('asc');
+  const [langLoading,setLangLoading] = useState(false);
   const tRef = useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
   const popBodyRef = useRef<HTMLDivElement>(null);
   const enfsRef    = useRef<HTMLDivElement>(null);
+  const cardScrollY = useRef<number>(0);
+  const cardIdRef   = useRef<string|null>(null);
 
   useEffect(()=>{
     document.documentElement.lang=lang;
     document.documentElement.dir=t.dir;
     document.documentElement.className=isAr?'lang-ar':'lang-fr';
   },[lang,t.dir,isAr]);
+
+  const switchLang = useCallback((l:Lang)=>{
+    if(l===lang) return;
+    setLangLoading(true);
+    setTimeout(()=>{
+      setLang(l);
+      setTimeout(()=>setLangLoading(false), 350);
+    }, 320);
+  },[lang]);
 
   const showToast=useCallback((msg:string,type:'ok'|'err'|'info'='ok')=>{
     setToast({msg,type}); clearTimeout(tRef.current);
@@ -315,8 +327,28 @@ export default function Page() {
   const updateFilter=(id:string,patch:Partial<FilterRow>)=>setFilters(f=>f.map(x=>x.id===id?{...x,...patch}:x));
   const clearAll=()=>{setFilters([]);setQuickQ('');};
 
-  const openPopup=(a:Aramila)=>{setPopup(a);setPopEnf([]);fetchEnf(a.id);};
-  const closePopup=()=>{setPopup(null);setPopEnf([]);};
+  const openPopup=(a:Aramila)=>{
+    cardScrollY.current = window.scrollY;
+    cardIdRef.current   = a.id;
+    setPopup(a); setPopEnf([]); fetchEnf(a.id);
+  };
+  const closePopup=()=>{
+    setPopup(null); setPopEnf([]);
+    // Restore scroll position smoothly
+    const y = cardScrollY.current;
+    const id = cardIdRef.current;
+    setTimeout(()=>{
+      window.scrollTo({top: y, behavior:'smooth'});
+      // Brief highlight flash on the card
+      if(id){
+        const el = document.querySelector(`[data-card-id="${id}"]`) as HTMLElement|null;
+        if(el){
+          el.classList.add('card-return-flash');
+          setTimeout(()=>el.classList.remove('card-return-flash'), 900);
+        }
+      }
+    }, 60);
+  };
 
   /* Open form modals — keep popup visible underneath */
   const openFormA=(data:Partial<Aramila>)=>{setEditA({...data});setShowFormA(true);};
@@ -406,7 +438,7 @@ export default function Page() {
           <p className="sb-sub">{t.appSub}</p>
           <div className="sb-line"/>
         </div>
-        <div className="sb-lang"><LangSwitch lang={lang} onChange={setLang}/></div>
+        <div className="sb-lang"><LangSwitch lang={lang} onChange={switchLang}/></div>
         <nav className="sb-nav">
           <div className="sb-sec">{isAr?'التنقل':'Navigation'}</div>
           <button className="nav-btn active">{I.user}<span>{t.allFiles}</span></button>
@@ -548,7 +580,7 @@ export default function Page() {
           ):(
             <div className="cards">
               {list.map((a,i)=>(
-                <div className="acard" key={a.id} style={{animationDelay:`${Math.min(i,10)*0.04}s`}} onClick={()=>openPopup(a)}>
+                <div className="acard" key={a.id} data-card-id={a.id} style={{animationDelay:`${Math.min(i,10)*0.04}s`}} onClick={()=>openPopup(a)}>
                   <div className="acard-top">
                     <div className="avatar">{ini(a.nom,a.prenom)}</div>
                     <div className="acard-id">
@@ -819,6 +851,22 @@ export default function Page() {
           <div className={`toast ${toast.type}`}>
             <span className="toast-icon">{toast.type==='ok'?'✓':toast.type==='err'?'✕':'ℹ'}</span>
             {toast.msg}
+          </div>
+        </div>
+      )}
+
+      {/* ══ LANG TRANSITION OVERLAY ══ */}
+      {langLoading&&(
+        <div className="lang-overlay">
+          <div className="lang-overlay-inner">
+            <svg className="lang-star" width="52" height="52" viewBox="0 0 100 100" fill="none">
+              <path d="M50 15 L57 35 L77 28 L64 44 L84 50 L64 56 L77 72 L57 65 L50 85 L43 65 L23 72 L36 56 L16 50 L36 44 L23 28 L43 35 Z"
+                fill="rgba(196,154,34,.22)" stroke="rgba(196,154,34,.95)" strokeWidth="1.5"/>
+              <circle cx="50" cy="50" r="8" fill="rgba(255,215,100,.95)"/>
+            </svg>
+            <div className="lang-overlay-dots">
+              <span/><span/><span/>
+            </div>
           </div>
         </div>
       )}
