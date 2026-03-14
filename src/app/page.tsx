@@ -228,6 +228,7 @@ export default function Page() {
   const [sortField,setSortField] = useState('nom');
   const [sortDir,setSortDir]     = useState<'asc'|'desc'>('asc');
   const [langLoading,setLangLoading] = useState(false);
+  const [sidebarOpen,setSidebarOpen] = useState(false);
   const tRef = useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
   const popBodyRef = useRef<HTMLDivElement>(null);
   const enfsRef    = useRef<HTMLDivElement>(null);
@@ -439,7 +440,13 @@ export default function Page() {
     <div className={`app${isAr?' rtl':''}`}>
 
       {/* ══ SIDEBAR ══ */}
-      <aside className="sidebar">
+      {/* Mobile overlay */}
+      {sidebarOpen&&<div className="sb-overlay" onClick={()=>setSidebarOpen(false)}/>}
+      <aside className={`sidebar${sidebarOpen?' sidebar-open':''}`}>
+        {/* Mobile close button inside sidebar */}
+        <button className="sb-close-btn" onClick={()=>setSidebarOpen(false)} aria-label="Fermer">
+          {I.x}
+        </button>
         <div className="sb-brand">
           <div className="sb-logo-wrap"><IslamicLogo size={58}/></div>
           <h1 className="sb-title">{t.appName}</h1>
@@ -483,7 +490,13 @@ export default function Page() {
       {/* ══ MAIN ══ */}
       <div className="main">
         <div className="topbar">
-          <div className="topbar-l"><span className="topbar-title">{t.topbarTitle}</span></div>
+          <div className="topbar-l">
+            {/* Hamburger — mobile only */}
+            <button className="hamburger" onClick={()=>setSidebarOpen(o=>!o)} aria-label="Menu">
+              <span/><span/><span/>
+            </button>
+            <span className="topbar-title">{t.topbarTitle}</span>
+          </div>
           <div className="topbar-r">
             <button className="btn btn-outline btn-sm" onClick={()=>setShowBuilder(!showBuilder)}>
               {I.filter} {t.advFilters}{activeCount>0&&<span className="badge-count">{activeCount}</span>}
