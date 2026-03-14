@@ -46,6 +46,24 @@ const I={
 const ini=(n='',p='')=>((p[0]||'')+(n[0]||'')).toUpperCase()||'?';
 const fmt=(d?:string)=>{if(!d)return'—';const[y,m,dd]=d.split('-');return dd&&m?`${dd}/${m}/${y}`:d;};
 
+/* ── Static fallback schema (used before API responds) ── */
+const FALLBACK_SCHEMA: FieldSchema[] = [
+  {key:'q',            label:'Recherche globale',   type:'text',   ops:['LIKE']},
+  {key:'nom',          label:'Nom',                 type:'text',   ops:['LIKE','=','!=','NOT NULL','NULL']},
+  {key:'prenom',       label:'Prénom',              type:'text',   ops:['LIKE','=','!=','NOT NULL','NULL']},
+  {key:'cin',          label:'CIN',                 type:'text',   ops:['=','LIKE','NOT NULL','NULL']},
+  {key:'adresse',      label:'Adresse',             type:'text',   ops:['LIKE','=','NOT NULL','NULL']},
+  {key:'telephone',    label:'Téléphone',           type:'text',   ops:['LIKE','=','NOT NULL','NULL']},
+  {key:'nom_mari',     label:'Nom du mari',         type:'text',   ops:['LIKE','=','!=','NOT NULL','NULL']},
+  {key:'prenom_mari',  label:'Prénom du mari',      type:'text',   ops:['LIKE','=','NOT NULL','NULL']},
+  {key:'age',          label:'Âge',                 type:'number', ops:['>=','<=','>','<','=','BETWEEN']},
+  {key:'date_naissance',label:'Date de naissance',  type:'date',   ops:['>=','<=','=','BETWEEN','NOT NULL','NULL']},
+  {key:'date_deces_mari',label:'Date décès du mari',type:'date',   ops:['>=','<=','=','BETWEEN','NOT NULL','NULL']},
+  {key:'annees_veuvage',label:'Années de veuvage',  type:'number', ops:['>=','<=','>','<','=','BETWEEN']},
+  {key:'nb_enfants',   label:"Nombre d'enfants",    type:'number', ops:['>=','<=','>','<','=','BETWEEN']},
+  {key:'notes',        label:'Notes',               type:'text',   ops:['LIKE','NOT NULL','NULL']},
+];
+
 /* ── Op meta ─────────────────────────────────────── */
 const OP_META:Record<string,{color:string;bg:string;needsVal:boolean;needsVal2:boolean}>={
   'LIKE':{color:'#1565A8',bg:'#E3F0FF',needsVal:true,needsVal2:false},
@@ -270,7 +288,10 @@ export default function Page() {
   useEffect(()=>{fetchSchema();fetchStats();},[]);
   useEffect(()=>{fetchList();},[buildParams,sortField,sortDir]);
 
-  const tSchema=schema.map(s=>({...s,label:(t.schemaLabels as any)[s.key]||s.label}));
+  const tSchema = (schema.length > 0 ? schema : FALLBACK_SCHEMA).map(s => ({
+    ...s,
+    label: (t.schemaLabels as any)[s.key] || s.label,
+  }));
   const schemaOf=(key:string)=>tSchema.find(s=>s.key===key);
 
   const addFilter=(fieldKey?:string)=>{
@@ -437,7 +458,10 @@ export default function Page() {
                     <div className="qb-suggestions">
                       {t.suggestions.map((s,i)=>(
                         <button key={i} className="qb-sug" onClick={()=>{
-                          setFilters(f=>[...f,{id:uid(),field:s.field,op:s.op,val:s.val,val2:''}]);
+                          const sc = tSchema.find(x=>x.key===s.field);
+                          const op = s.op || sc?.ops[0] || 'LIKE';
+                          setFilters(f=>[...f,{id:uid(),field:s.field,op,val:s.val,val2:''}]);
+                          setShowBuilder(true);
                         }}>{s.label}</button>
                       ))}
                     </div>
