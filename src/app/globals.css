@@ -229,6 +229,12 @@ body {
   display: block; font-family: var(--font-serif); font-size: 1.45rem;
   color: var(--gold-mid); line-height: 1; font-weight: 700;
 }
+.stat-tile strong.stat-secondary {
+  font-size: 1.2rem;
+  color: rgba(255,255,255,.75);
+}
+/* Show "—" when value is 0 using content trick */
+.stat-tile strong:empty::before { content: '0'; }
 .stat-tile span {
   font-size: .58rem; color: rgba(255,255,255,.35);
   text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; display: block;
@@ -825,19 +831,154 @@ html.lang-ar .stat-tile span { font-family: var(--font-arabic); font-size: .68re
 html.lang-ar .nav-btn span { font-family: var(--font-arabic); }
 html.lang-ar .det-field .field-lbl { font-family: var(--font-arabic); letter-spacing: 0; }
 
+/* ══ SCROLLABLE ENFANTS TABLE ══════════════════════ */
+.tbl-scroll-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: auto;                  /* both axes */
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  /* Fade hint on right edge to signal horizontal scroll */
+  background-image: linear-gradient(to right, #fff 0px, #fff 8px, transparent 8px),
+                    linear-gradient(to left,  rgba(125,29,63,.06) 0px, transparent 48px);
+  background-attachment: local, scroll;
+  background-size: 8px 100%, 48px 100%;
+  background-position: left, right;
+  background-repeat: no-repeat;
+}
+.enf-table {
+  width: 100%; border-collapse: collapse; font-size: .81rem;
+  min-width: 520px;   /* forces horizontal scroll on narrow screens */
+}
+.enf-table thead tr { background: var(--rose-pale); }
+.enf-table th {
+  padding: 10px 13px; font-size: .66rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em; color: var(--rose);
+  white-space: nowrap; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 2; background: var(--rose-pale);
+}
+.enf-table td {
+  padding: 9px 13px; border-bottom: 1px solid var(--border);
+  color: var(--text-mid); vertical-align: middle; white-space: nowrap;
+}
+.enf-table tbody tr:last-child td { border-bottom: none; }
+.enf-table tbody tr { transition: background .15s var(--ease); }
+.enf-table tbody tr:hover { background: var(--rose-pale); }
+
+/* Sticky first column (name) */
+.col-sticky {
+  position: sticky; left: 0; z-index: 1;
+  background: #fff;
+  box-shadow: 2px 0 6px rgba(125,29,63,.06);
+}
+.enf-table thead .col-sticky {
+  background: var(--rose-pale);
+  z-index: 3;
+}
+.col-name { font-weight: 600; min-width: 130px; }
+.col-actions { text-align: right; white-space: nowrap; }
+.tbl-acts { display: flex; gap: 5px; justify-content: flex-end; }
+.nowrap { white-space: nowrap; }
+
 /* ══ MOBILE ════════════════════════════════════════ */
 @media (max-width: 700px) {
   .app { grid-template-columns: 1fr; }
   .sidebar { position: relative; height: auto; }
   .topbar { padding: 10px 16px; }
-  .page { padding: 16px; }
+  .page { padding: 12px 14px; }
   .cards { grid-template-columns: 1fr; }
-  .popup-grid { grid-template-columns: 1fr; }
-  .fmodal { max-width: 100%; border-radius: 20px 20px 0 0; position: fixed; bottom: 0; left: 0; right: 0; max-height: 92vh; animation: fmInMobile .3s var(--spring); }
+  .toasts { bottom: 12px; inset-inline-end: 12px; inset-inline-start: 12px; }
+
+  /* ── Form modal as bottom sheet ── */
+  .fmodal {
+    max-width: 100%; border-radius: 20px 20px 0 0;
+    position: fixed; bottom: 0; left: 0; right: 0; max-height: 94vh;
+    animation: fmInMobile .3s var(--spring);
+  }
   .fmodal-wrap { align-items: flex-end; padding: 0; }
   @keyframes fmInMobile { from{transform:translateY(100%);} to{transform:translateY(0);} }
   .fmodal-body .fg { grid-template-columns: 1fr; }
-  .toasts { bottom: 12px; inset-inline-end: 12px; inset-inline-start: 12px; }
+
+  /* ── Popup as full-screen bottom sheet ── */
+  .popup-wrap {
+    align-items: flex-end;
+    padding: 0;
+    background: rgba(12,4,2,.65);
+  }
+  .popup {
+    border-radius: 22px 22px 0 0;
+    max-width: 100%;
+    max-height: 96vh;
+    width: 100%;
+    animation: popupMobileIn .35s var(--spring);
+  }
+  @keyframes popupMobileIn {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);   opacity: 1; }
+  }
+
+  /* ── Drag handle ── */
+  .popup-drag-handle {
+    display: block;
+    width: 36px; height: 4px; border-radius: 99px;
+    background: rgba(255,255,255,.35);
+    margin: 10px auto 0;
+    cursor: pointer;
+  }
+
+  /* ── Collapsible header on mobile ── */
+  .popup-hdr {
+    cursor: pointer;
+    padding: 12px 16px 14px;
+    user-select: none;
+    flex-wrap: wrap; gap: 10px;
+    position: relative;
+    transition: padding .3s var(--spring);
+  }
+  .popup-hdr-chevron {
+    display: flex; align-items: center; justify-content: center;
+    position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    font-size: .65rem; color: rgba(255,255,255,.5); letter-spacing: .08em;
+    transition: transform .22s var(--spring);
+  }
+  .popup-hdr-meta { transition: all .3s var(--spring); }
+  /* Collapsed state */
+  .popup.popup-hdr-collapsed .popup-hdr { padding-bottom: 12px; }
+  .popup.popup-hdr-collapsed .popup-hdr-meta { display: none; }
+  .popup.popup-hdr-collapsed .popup-hdr-chevron { transform: translateX(-50%) rotate(180deg); }
+  .popup.popup-hdr-collapsed .popup-body { flex: 1; }
+
+  /* Tighten header buttons on mobile */
+  .popup-hdr-acts {
+    gap: 6px;
+  }
+  .popup-hdr-acts .btn-sm {
+    padding: 5px 9px; font-size: .72rem;
+  }
+
+  /* ── Stack cards vertically on mobile ── */
+  .popup-grid { grid-template-columns: 1fr; }
+
+  /* ── Footer stacks on mobile ── */
+  .popup-foot {
+    padding: 10px 14px 16px;
+    gap: 6px;
+  }
+  .popup-foot .btn { font-size: .74rem; padding: 7px 11px; }
+
+  /* ── Body padding tighter on mobile ── */
+  .popup-body { padding: 14px 14px 12px; }
+
+  /* ── Table min-width reduced on mobile (horizontal scroll kicks in) ── */
+  .enf-table { min-width: 480px; font-size: .78rem; }
+  .enf-table th, .enf-table td { padding: 8px 10px; }
+}
+
+/* ── Desktop: hide drag handle and chevron ── */
+@media (min-width: 701px) {
+  .popup-drag-handle { display: none; }
+  .popup-hdr-chevron { display: none; }
+  .popup-hdr { cursor: default; }
 }
 
 /* ══ LANG TRANSITION OVERLAY ═══════════════════════ */

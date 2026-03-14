@@ -214,6 +214,7 @@ export default function Page() {
   const [popup,setPopup]         = useState<Aramila|null>(null);
   const [popEnf,setPopEnf]       = useState<Enfant[]>([]);
   const [popLoad,setPopLoad]     = useState(false);
+  const [popHdrCollapsed,setPopHdrCollapsed] = useState(false);
 
   // Form modals (stacked above popup)
   const [showFormA,setShowFormA] = useState(false);
@@ -286,7 +287,13 @@ export default function Page() {
   },[buildParams,sortField,sortDir,showToast,t.connError]);
 
   const fetchStats=useCallback(async()=>{
-    try{const r=await fetch(`${API}/stats`);if(r.ok)setStats(await r.json());}catch{}
+    try{
+      const r=await fetch(`${API}/stats`);
+      if(r.ok){
+        const data=await r.json();
+        setStats(prev=>({...prev,...data}));  // merge — keeps default 0 for missing fields
+      }
+    }catch{}
   },[]);
 
   const fetchSchema=useCallback(async()=>{
@@ -330,6 +337,7 @@ export default function Page() {
   const openPopup=(a:Aramila)=>{
     cardScrollY.current = window.scrollY;
     cardIdRef.current   = a.id;
+    setPopHdrCollapsed(false);
     setPopup(a); setPopEnf([]); fetchEnf(a.id);
   };
   const closePopup=()=>{
@@ -453,10 +461,22 @@ export default function Page() {
           <button className="nav-btn" onClick={doExport}>{I.export}<span>{t.exportBtn}</span></button>
         </nav>
         <div className="sb-stats">
-          <div className="stat-tile"><strong>{stats.total_aramilat}</strong><span>{t.stats.aramilat}</span></div>
-          <div className="stat-tile"><strong>{stats.total_enfants}</strong><span>{t.stats.enfants}</span></div>
-          <div className="stat-tile"><strong>{stats.avec_enfants}</strong><span>{t.stats.avecEnfants}</span></div>
-          <div className="stat-tile"><strong>{stats.sans_enfants}</strong><span>{t.stats.sansEnfants}</span></div>
+          <div className="stat-tile stat-primary">
+            <strong>{stats.total_aramilat ?? 0}</strong>
+            <span>{t.stats.aramilat}</span>
+          </div>
+          <div className="stat-tile stat-primary">
+            <strong>{stats.total_enfants ?? 0}</strong>
+            <span>{t.stats.enfants}</span>
+          </div>
+          <div className="stat-tile">
+            <strong className="stat-secondary">{stats.avec_enfants ?? 0}</strong>
+            <span>{t.stats.avecEnfants}</span>
+          </div>
+          <div className="stat-tile">
+            <strong className="stat-secondary">{stats.sans_enfants ?? 0}</strong>
+            <span>{t.stats.sansEnfants}</span>
+          </div>
         </div>
       </aside>
 
@@ -618,26 +638,35 @@ export default function Page() {
       {/* ══ DETAIL POPUP (z:60) ══ */}
       {popup&&(
         <div className="popup-wrap" onClick={closePopup}>
-          <div className="popup" onClick={e=>e.stopPropagation()}>
-            {/* Header */}
-            <div className="popup-hdr">
+          <div className={`popup${popHdrCollapsed?' popup-hdr-collapsed':''}`} onClick={e=>e.stopPropagation()}>
+
+            {/* ── Drag handle (mobile only) ── */}
+            <div className="popup-drag-handle" onClick={closePopup}/>
+
+            {/* ── Header (tappable to collapse on mobile) ── */}
+            <div className="popup-hdr" onClick={()=>setPopHdrCollapsed(c=>!c)}>
               <div className="popup-av">{ini(popup.nom,popup.prenom)}</div>
               <div className="popup-hdr-info">
                 <h2>{popup.prenom} {popup.nom}</h2>
-                <p>
+                <p className="popup-hdr-meta">
                   {popup.cin&&<span>{I.id}&nbsp;{popup.cin}</span>}
                   {popup.telephone&&<span>{I.phone}&nbsp;{popup.telephone}</span>}
                   <span>{I.child}&nbsp;{popLoad?'…':popEnf.length} {t.child_badge(popEnf.length).replace(/^\d+ /,'')}</span>
                 </p>
               </div>
-              <div className="popup-hdr-acts">
+              <div className="popup-hdr-acts" onClick={e=>e.stopPropagation()}>
                 <button className="btn btn-sm ghost-white" onClick={()=>openFormA({...popup})}>{I.edit} {t.edit}</button>
                 <button className="btn btn-sm ghost-white" onClick={()=>openFormE(emptyE())}>{I.plus} {t.children}</button>
                 <button className="popup-close" onClick={closePopup}>{I.x}</button>
               </div>
+              {/* Collapse chevron indicator */}
+              <div className="popup-hdr-chevron">{popHdrCollapsed?'▾':'▴'}</div>
             </div>
-            {/* Body */}
+
+            {/* ── Body ── */}
             <div className="popup-body" ref={popBodyRef}>
+
+              {/* Info grid */}
               <div className="popup-grid">
                 <div className="popup-card">
                   <div className="popup-card-title">{I.user} {t.identity}</div>
@@ -656,11 +685,12 @@ export default function Page() {
                 </div>
               </div>
 
-              {/* Enfants section */}
+              {/* ── Enfants section ── */}
               <div className="sect-hdr" ref={enfsRef}>
                 <div className="sect-title">{I.child} {t.children} ({popLoad?'…':popEnf.length})</div>
                 <button className="btn btn-rose btn-sm" onClick={()=>openFormE(emptyE())}>{I.plus} {t.addChild}</button>
               </div>
+
               {popLoad?(
                 <div className="loading" style={{padding:24}}><div className="spin"/></div>
               ):popEnf.length===0?(
@@ -670,29 +700,40 @@ export default function Page() {
                   <p>{t.noChildrenSub}</p>
                 </div>
               ):(
-                <div className="tbl-wrap"><table>
-                  <thead><tr>
-                    <th>{t.tblName}</th><th>{t.tblSex}</th><th>{t.tblBirth}</th>
-                    <th>{t.tblClothes}</th><th>{t.tblShoes}</th>
-                    <th style={{textAlign:isAr?'left':'right'}}>{t.tblActions}</th>
-                  </tr></thead>
-                  <tbody>{popEnf.map((e,i)=>(
-                    <tr key={e.id} style={{animationDelay:`${i*0.04}s`}}>
-                      <td><span style={{fontWeight:600}}>{e.prenom} {e.nom}</span></td>
-                      <td>{e.sexe?<span className={`badge-sexe sexe-${e.sexe}`}>{e.sexe==='M'?t.boy:t.girl}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>
-                      <td>{fmt(e.date_naissance)}</td>
-                      <td>{e.taille_vetements?<span className="taille-tag">{I.shirt} {e.taille_vetements}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>
-                      <td>{e.taille_chaussures?<span className="taille-tag">{I.shoe} {e.taille_chaussures}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>
-                      <td><div style={{display:'flex',gap:5,justifyContent:isAr?'flex-start':'flex-end'}}>
-                        <button className="btn-icon" onClick={()=>openFormE({...e})}>{I.edit}</button>
-                        <button className="btn-icon del" onClick={()=>delE(e)}>{I.trash}</button>
-                      </div></td>
-                    </tr>
-                  ))}</tbody>
-                </table></div>
+                /* Scrollable table container — both axes */
+                <div className="tbl-scroll-wrap">
+                  <table className="enf-table">
+                    <thead><tr>
+                      <th className="col-sticky">{t.tblName}</th>
+                      <th>{t.tblSex}</th>
+                      <th>{t.tblBirth}</th>
+                      <th>{t.tblClothes}</th>
+                      <th>{t.tblShoes}</th>
+                      <th className="col-actions">{t.tblActions}</th>
+                    </tr></thead>
+                    <tbody>{popEnf.map((e,i)=>(
+                      <tr key={e.id} style={{animationDelay:`${i*0.04}s`}}>
+                        <td className="col-sticky col-name"><span>{e.prenom} {e.nom}</span></td>
+                        <td>{e.sexe?<span className={`badge-sexe sexe-${e.sexe}`}>{e.sexe==='M'?t.boy:t.girl}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>
+                        <td className="nowrap">{fmt(e.date_naissance)}</td>
+                        <td>{e.taille_vetements?<span className="taille-tag">{I.shirt} {e.taille_vetements}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>
+                        <td>{e.taille_chaussures?<span className="taille-tag">{I.shoe} {e.taille_chaussures}</span>:<span style={{color:'var(--text-muted)'}}>—</span>}</td>
+                        <td className="col-actions">
+                          <div className="tbl-acts">
+                            <button className="btn-icon" onClick={()=>openFormE({...e})}>{I.edit}</button>
+                            <button className="btn-icon del" onClick={()=>delE(e)}>{I.trash}</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
               )}
+              {/* Bottom spacer so content clears the fixed footer */}
+              <div style={{height:8}}/>
             </div>
-            {/* Footer */}
+
+            {/* ── Footer ── */}
             <div className="popup-foot">
               <button className="btn btn-danger btn-sm" onClick={()=>delA(popup)}>{I.trash} {t.deleteFile}</button>
               <button className="btn btn-outline btn-sm" onClick={closePopup}>{t.close}</button>
